@@ -61,7 +61,7 @@ def create_embedding(text):
         input=text,
         model="text-embedding-ada-002"
     )
-    return response
+    return response.data[0].embedding
 
 def process_controls(controls):
     for control in controls:

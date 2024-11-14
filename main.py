@@ -18,9 +18,6 @@ df = pd.read_csv(file_path)
 # Convert embeddings from string to list if needed
 df['embedding'] = df['embedding'].apply(lambda x: literal_eval(x) if isinstance(x, str) else x)
 
-# Display the first few rows of the DataFrame
-print(df.head())
-
 def cosine_similarity(embedding1, embedding2):
     return np.dot(embedding1, embedding2) / (norm(embedding1) * norm(embedding2))
 
@@ -33,20 +30,24 @@ def create_query_embedding(query):
     return response.data[0].embedding
 
 # Example user query
-query = "Non-local maintenance requires a password and username."
+query = input("Enter the finding:")
 query_embedding = create_query_embedding(query)
 
 # Compute similarity for each control
 df['similarity'] = df['embedding'].apply(lambda x: cosine_similarity(query_embedding, np.array(x)))
 
 # Sort by similarity to get the top 10 matches
-top_matches = df.nlargest(5, 'similarity')
+top_matches = df[df['similarity'] > 0.795]
 
-top_matches = pd.DataFrame(top_matches)
+if top_matches.empty:
+    top_matches = df.nlargest(5, 'similarity')
+
+if len(top_matches) > 12:
+    top_matches = df.nlargest(12, 'similarity')
 
 print(top_matches)
 
-introduction = "Briefly say why the observation makes the information system compliant or non-compliant. Use the controls provided. Use passive voice."
+introduction = "First list each control with COMPLIANT, NONCOMPLIANT, or NOT ENOUGH INFO. Then, briefly say why the observation makes the information system compliant or non-compliant. Use the controls provided. Use passive voice."
 
 query = f"\n\nObservation: {query}"
 

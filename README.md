@@ -1,1 +1,1 @@
-# AI_Cyber
+# Cyber GRC Assistant

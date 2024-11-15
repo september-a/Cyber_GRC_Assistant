@@ -4,15 +4,13 @@ import pandas as pd
 from openai import OpenAI
 from numpy.linalg import norm
 from ast import literal_eval
+import streamlit as st
 
 # Create Client
 client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY", "<your OpenAI API key if not set as env var>"))
 
 # Path to your CSV file
 file_path = 'data/NIST_Controls.csv'
-
-# Read the CSV file into a DataFrame
-df = pd.read_csv(file_path)
 
 def cosine_similarity(embedding1, embedding2):
     return np.dot(embedding1, embedding2) / (norm(embedding1) * norm(embedding2))
@@ -77,26 +75,51 @@ def get_top_matches(query_embedding, df):
     if len(top_matches) > 12:
         top_matches = df.nlargest(12, 'similarity')
 
-    print(top_matches)
     return top_matches
 
+def clean_up_matches(df):
+    columns_to_hide = ["FAMILY", "TITLE", "PRIORITY", "BASELINE_IMPACT", "embedding"]
+    filtered_df = df.drop(columns=columns_to_hide)
+    return filtered_df
 
-df = prep_dataframe(df)
+def main():
+    # Read the CSV file into a DataFrame
+    df = pd.read_csv(file_path) 
+    df = prep_dataframe(df)
 
-# User query
-query = input("Enter the finding:")
-query_embedding = create_query_embedding(query)
+    # Streamlit UI Stuff
+    st.title("Cyber GRC Assistant")
 
-# prep messages
-top_matches = get_top_matches(query_embedding, df)
-messages = prepare_messages(query, top_matches)
+    # Input for user query
+    query = st.text_input("Input finding:")
 
-# Generate a response using the OpenAI API
-response = client.chat.completions.create(
-    model="gpt-4",
-    messages=messages,
-    temperature=0
-)
+    # Button to trigger query processing
+    if query != "":
+        if query.strip() == "":
+            st.warning("Please enter a query.")
+        else:
+            # Generate query embedding and top matches
+            query_embedding = create_query_embedding(query)
+            top_matches = get_top_matches(query_embedding, df)
 
-response_message = response.choices[0].message.content
-print(response_message)
+            # Make a prettier df to display to user.
+            top_matches_pretty = clean_up_matches(top_matches)
+
+            # Display the top matches
+            st.subheader("Top Matches")
+            st.dataframe(data=top_matches_pretty, hide_index=True)
+
+            messages = prepare_messages(query, top_matches)
+
+            # Generate a response using the OpenAI API
+            response = client.chat.completions.create(
+                model="gpt-4",
+                messages=messages,
+                temperature=0
+            )
+
+            response_message = response.choices[0].message.content
+            st.text(response_message)
+
+
+main()

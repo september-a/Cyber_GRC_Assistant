@@ -91,7 +91,6 @@ def process_controls(controls):
     return controls
 
 def main():
-    
     # Read and process controls
     controls = read_csv(file_path)
     processed_controls = process_controls(controls)

@@ -5,7 +5,7 @@
 **Use Cases**
 - Quickly mapping findings to appropriate controls, perhaps while being discussed in meetings or onsite.
 - Guiding entry-level assessors with determining compliance status.
-- Identifying gaps in knowledge of the security posture of the system. 
+- Identifying gaps in knowledge related to the security posture of the system. 
 
 # Set-up
 1. Clone the repository `git clone https://github.com/september-a/Cyber_GRC_Assistant`

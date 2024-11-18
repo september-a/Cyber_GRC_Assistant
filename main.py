@@ -83,15 +83,16 @@ def clean_up_matches(df):
     return filtered_df
 
 def main():
-    # Read the CSV file into a DataFrame
-    df = pd.read_csv(file_path) 
-    df = prep_dataframe(df)
 
     # Streamlit UI Stuff
     st.title("Cyber GRC Assistant")
 
     # Input for user query
     query = st.text_input("Input finding:")
+
+    # Read the CSV file into a DataFrame
+    df = pd.read_csv(file_path) 
+    df = prep_dataframe(df)
 
     # Button to trigger query processing
     if query != "":

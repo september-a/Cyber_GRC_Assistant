@@ -1,11 +1,11 @@
 # Cyber GRC Assistant
 
-**Cyber GRC Assistant** is a Streamlit-based application designed to assist with Governance, Risk, and Compliance (GRC) tasks in cybersecurity. The application will take cyber security findings and map them to a select number of cybersecurity controls in the NIST 800-53 along with a brief compliancy statement.
+**Cyber GRC Assistant** is a Streamlit-based application designed to assist with Governance, Risk, and Compliance (GRC) tasks in cybersecurity. The application will map cyber security findings to a select number of cybersecurity controls in the NIST 800-53. A compliancy statement is also provided.
 
 **Use Cases**
-- Quickly mapping findings to appropriate controls, perhaps while being discussed in meetings or onsite.
+- Quickly mapping findings to appropriate controls, perhaps while being discussed in meetings or in documentation.
 - Guiding entry-level assessors with determining compliance status.
-- Identifying gaps in knowledge related to the security posture of the system. 
+- Identifying gaps in knowledge related to the security posture of the system.
 
 # Set-up
 1. Clone the repository `git clone https://github.com/september-a/Cyber_GRC_Assistant`

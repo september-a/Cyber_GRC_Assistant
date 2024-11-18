@@ -82,45 +82,59 @@ def clean_up_matches(df):
     filtered_df = df.drop(columns=columns_to_hide)
     return filtered_df
 
+# Main function
 def main():
-
-    # Streamlit UI Stuff
     st.title("Cyber GRC Assistant")
 
-    # Input for user query
-    query = st.text_input("Input finding:")
+    # Initialize session state
+    if "query" not in st.session_state:
+        st.session_state.query = ""
+    if "top_matches" not in st.session_state:
+        st.session_state.top_matches = None
+    if "response_message" not in st.session_state:
+        st.session_state.response_message = None
 
-    # Read the CSV file into a DataFrame
-    df = pd.read_csv(file_path) 
+    # Input for user query
+    query = st.text_input("Input finding:", value=st.session_state.query)
+
+    # Load and prepare the DataFrame
+    df = pd.read_csv(file_path)
     df = prep_dataframe(df)
 
-    # Button to trigger query processing
-    if query != "":
+    # Button to process the query
+    if st.button("Submit Query"):
         if query.strip() == "":
-            st.warning("Please enter a query.")
+            st.warning("Please enter a valid query.")
         else:
-            # Generate query embedding and top matches
+            # Update session state with the current query
+            st.session_state.query = query
+
+            # Generate query embedding and find top matches
             query_embedding = create_query_embedding(query)
             top_matches = get_top_matches(query_embedding, df)
 
-            # Make a prettier df to display to user.
+            # Clean up matches and save to session state
             top_matches_pretty = clean_up_matches(top_matches)
+            st.session_state.top_matches = top_matches_pretty
 
-            # Display the top matches
-            st.subheader("Top Matches")
-            st.dataframe(data=top_matches_pretty, hide_index=True)
-
+            # Prepare messages and get the response
             messages = prepare_messages(query, top_matches)
-
-            # Generate a response using the OpenAI API
             response = client.chat.completions.create(
                 model="gpt-4",
                 messages=messages,
                 temperature=0
             )
+            st.session_state.response_message = response.choices[0].message.content
 
-            response_message = response.choices[0].message.content
-            st.text(response_message)
+    # Display results if they exist in session state
+    if st.session_state.top_matches is not None:
+        st.subheader("Top Matches")
+        st.dataframe(data=st.session_state.top_matches, hide_index=True)
+
+    if st.session_state.response_message is not None:
+        st.subheader("Generated Response")
+        st.text(st.session_state.response_message)
 
 
-main()
+if __name__ == "__main__":
+    main()

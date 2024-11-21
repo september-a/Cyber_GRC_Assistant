@@ -64,11 +64,11 @@ def get_top_matches(query_embedding, df):
     # Compute similarity for each control
     df['similarity'] = df['embedding'].apply(lambda x: cosine_similarity(query_embedding, np.array(x)))
 
-    # Sort by similarity to get the top 10 matches
+    # Sort by similarity to get matches over .79
     top_matches = df[df['similarity'] > 0.79]
 
     # If there are no matches over .795, get top 5.
-    if top_matches.empty:
+    if len(top_matches) < 5:
         top_matches = df.nlargest(5, 'similarity')
 
     # If there are too many matches (can lead to too many tokens in a request), only give 12

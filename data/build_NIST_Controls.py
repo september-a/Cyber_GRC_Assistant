@@ -1,5 +1,4 @@
 import pandas as pd
-import numpy as np
 
 df_ccis = pd.DataFrame(pd.read_excel("data/NIST_800-53_Mapping.xlsx", header=1))
 

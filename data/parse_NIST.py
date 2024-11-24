@@ -7,7 +7,7 @@ import tiktoken
 client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY", "<your OpenAI API key if not set as env var>"))
 
 # Define the file with controls
-file_path = "NIST_800-53_Rev_4_Controls.csv"
+file_path = "data/NIST_800-53_Controls.csv"
 
 # Initialize tokenizer for token counting
 tokenizer = tiktoken.get_encoding("cl100k_base")
@@ -37,6 +37,7 @@ def read_csv(file_path):
             current_control.setdefault("DESCRIPTION", row["DESCRIPTION"])
             current_control.setdefault("SUPPLEMENTAL_GUIDANCE", row["SUPPLEMENTAL GUIDANCE"])
             current_control.setdefault("RELATED", row["RELATED"])
+            current_control.setdefault("ccis", row["ccis"])
 
         # Add the last control to the list
         if current_control:

@@ -30,7 +30,7 @@ def prep_dataframe(df):
 
 def prepare_messages(query, controls):
     # Instructions for the output
-    introduction = "First list each control with COMPLIANT, NONCOMPLIANT, or NOT ENOUGH INFO. Then, briefly say why the observation makes the information system compliant or non-compliant. Use the controls provided. Use passive voice."
+    introduction = "First list each control as COMPLIANT, NONCOMPLIANT, or NOT ENOUGH INFO. Then, briefly say why the observation makes the information system compliant or non-compliant. Use the controls provided. If there is NOT ENOUGH INFO, describe the information needed to make a decision. Use passive voice."
 
     # User's input
     query = f"\n\nObservation: {query}"
@@ -46,6 +46,7 @@ def prepare_messages(query, controls):
             f"Baseline Impact: {control['BASELINE_IMPACT']}\n"
             f"Description: {control['DESCRIPTION']}\n"
             f"Supplemental Guidance: {control['SUPPLEMENTAL_GUIDANCE']}\n"
+            f"CCIs: {control['ccis']}\n"
             f"Related Controls: {control['RELATED']}\n"
         )
         message = message + text
@@ -68,12 +69,12 @@ def get_top_matches(query_embedding, df):
     top_matches = df[df['similarity'] > 0.79]
 
     # If there are no matches over .795, get top 5.
-    if len(top_matches) < 5:
-        top_matches = df.nlargest(5, 'similarity')
+    if len(top_matches) < 2:
+        top_matches = df.nlargest(2, 'similarity')
 
     # If there are too many matches (can lead to too many tokens in a request), only give 12
-    if len(top_matches) > 12:
-        top_matches = df.nlargest(12, 'similarity')
+    if len(top_matches) > 5:
+        top_matches = df.nlargest(5, 'similarity')
 
     return top_matches
 

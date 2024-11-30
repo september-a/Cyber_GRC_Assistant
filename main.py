@@ -30,7 +30,7 @@ def prep_dataframe(df):
 
 def prepare_messages(query, controls):
     # Instructions for the output
-    introduction = "First list each control with COMPLIANT, NONCOMPLIANT, or NOT ENOUGH INFO. Then, briefly say why the observation makes the information system compliant or non-compliant. Use the controls provided. Use passive voice."
+    introduction = "First list each control as COMPLIANT, NONCOMPLIANT, or NOT ENOUGH INFO. Then, briefly say why the observation makes the information system compliant or non-compliant. Use the controls provided. If there is NOT ENOUGH INFO, describe the information needed to make a decision. Use passive voice."
 
     # User's input
     query = f"\n\nObservation: {query}"
@@ -46,6 +46,7 @@ def prepare_messages(query, controls):
             f"Baseline Impact: {control['BASELINE_IMPACT']}\n"
             f"Description: {control['DESCRIPTION']}\n"
             f"Supplemental Guidance: {control['SUPPLEMENTAL_GUIDANCE']}\n"
+            f"CCIs: {control['ccis']}\n"
             f"Related Controls: {control['RELATED']}\n"
         )
         message = message + text
@@ -64,16 +65,16 @@ def get_top_matches(query_embedding, df):
     # Compute similarity for each control
     df['similarity'] = df['embedding'].apply(lambda x: cosine_similarity(query_embedding, np.array(x)))
 
-    # Sort by similarity to get the top 10 matches
-    top_matches = df[df['similarity'] > 0.79]
+    # Sort by similarity to get matches over .79
+    top_matches = df[df['similarity'] > 0.78]
 
     # If there are no matches over .795, get top 5.
-    if top_matches.empty:
-        top_matches = df.nlargest(5, 'similarity')
+    if len(top_matches) < 2:
+        top_matches = df.nlargest(2, 'similarity')
 
     # If there are too many matches (can lead to too many tokens in a request), only give 12
-    if len(top_matches) > 12:
-        top_matches = df.nlargest(12, 'similarity')
+    if len(top_matches) > 5:
+        top_matches = df.nlargest(5, 'similarity')
 
     return top_matches
 
@@ -82,44 +83,59 @@ def clean_up_matches(df):
     filtered_df = df.drop(columns=columns_to_hide)
     return filtered_df
 
+# Main function
 def main():
-    # Read the CSV file into a DataFrame
-    df = pd.read_csv(file_path) 
-    df = prep_dataframe(df)
-
-    # Streamlit UI Stuff
     st.title("Cyber GRC Assistant")
+
+    # Initialize session state
+    if "query" not in st.session_state:
+        st.session_state.query = ""
+    if "top_matches" not in st.session_state:
+        st.session_state.top_matches = None
+    if "response_message" not in st.session_state:
+        st.session_state.response_message = None
 
     # Input for user query
     query = st.text_input("Input finding:")
 
-    # Button to trigger query processing
-    if query != "":
+    # Load and prepare the DataFrame
+    df = pd.read_csv(file_path)
+    df = prep_dataframe(df)
+
+    # Button to process the query
+    if st.button("Submit Query"):
         if query.strip() == "":
-            st.warning("Please enter a query.")
+            st.warning("Please enter a valid query.")
         else:
-            # Generate query embedding and top matches
+            # Update session state with the current query
+            st.session_state.query = query
+
+            # Generate query embedding and find top matches
             query_embedding = create_query_embedding(query)
             top_matches = get_top_matches(query_embedding, df)
 
-            # Make a prettier df to display to user.
+            # Clean up matches and save to session state
             top_matches_pretty = clean_up_matches(top_matches)
+            st.session_state.top_matches = top_matches_pretty
 
-            # Display the top matches
-            st.subheader("Top Matches")
-            st.dataframe(data=top_matches_pretty, hide_index=True)
-
+            # Prepare messages and get the response
             messages = prepare_messages(query, top_matches)
-
-            # Generate a response using the OpenAI API
             response = client.chat.completions.create(
                 model="gpt-4",
                 messages=messages,
                 temperature=0
             )
+            st.session_state.response_message = response.choices[0].message.content
 
-            response_message = response.choices[0].message.content
-            st.text(response_message)
+    # Display results if they exist in session state
+    if st.session_state.top_matches is not None:
+        st.subheader("Top Matches")
+        st.dataframe(data=st.session_state.top_matches, hide_index=True)
+
+    if st.session_state.response_message is not None:
+        st.subheader("Generated Response")
+        st.text(st.session_state.response_message)
 
 
-main()
+if __name__ == "__main__":
+    main()

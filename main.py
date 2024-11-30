@@ -66,7 +66,7 @@ def get_top_matches(query_embedding, df):
     df['similarity'] = df['embedding'].apply(lambda x: cosine_similarity(query_embedding, np.array(x)))
 
     # Sort by similarity to get matches over .79
-    top_matches = df[df['similarity'] > 0.79]
+    top_matches = df[df['similarity'] > 0.78]
 
     # If there are no matches over .795, get top 5.
     if len(top_matches) < 2:
@@ -96,7 +96,7 @@ def main():
         st.session_state.response_message = None
 
     # Input for user query
-    query = st.text_input("Input finding:", value=st.session_state.query)
+    query = st.text_input("Input finding:")
 
     # Load and prepare the DataFrame
     df = pd.read_csv(file_path)

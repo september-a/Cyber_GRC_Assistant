@@ -1,3 +1,6 @@
+'''This is a script that was used to combine the NIST_800-53_Mapping.xlsx to the Rev 4 Controls. 
+This is not used when main.py is run.'''
+
 import pandas as pd
 
 df_ccis = pd.DataFrame(pd.read_excel("data/NIST_800-53_Mapping.xlsx", header=1))

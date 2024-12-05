@@ -1,4 +1,5 @@
 import os
+import re
 import numpy as np
 import pandas as pd
 from openai import OpenAI
@@ -83,6 +84,28 @@ def clean_up_matches(df):
     filtered_df = df.drop(columns=columns_to_hide)
     return filtered_df
 
+def create_structured_response(response):
+        # Define the regular expression pattern
+    pattern = r"Control:\s*(.+?)\s*Assessment:\s*(.+?)\s*Reason:\s*(.+?)(?=Control:|$)"
+    
+    # Find all matches in the input text
+    matches = re.findall(pattern, response, re.DOTALL)
+    
+    # Create a regular dictionary to hold the data
+    structured_data = {}
+    
+    for control, assessment, reason in matches:
+        control = control.strip()
+        assessment = assessment.strip()
+        reason = reason.strip()
+        
+        structured_data[control] = {
+            "Assessment": assessment,
+            "Reason": reason
+        }
+    
+    return structured_data
+
 # Main function
 def main():
     st.title("Cyber GRC Assistant")
@@ -94,38 +117,39 @@ def main():
         st.session_state.top_matches = None
     if "response_message" not in st.session_state:
         st.session_state.response_message = None
+    if "findings" not in st.session_state:
+        st.session_state.findings = {}
 
     # Input for user query
-    query = st.text_input("Input finding:")
+    st.sidebar.title("Findings")
+    query = st.sidebar.text_area("Input finding:")
 
     # Load and prepare the DataFrame
     df = pd.read_csv(file_path)
     df = prep_dataframe(df)
 
-    # Button to process the query
-    if st.button("Submit Query"):
-        if query.strip() == "":
-            st.warning("Please enter a valid query.")
-        else:
-            # Update session state with the current query
-            st.session_state.query = query
+    if query.strip() == "":
+        st.sidebar.warning("Please enter a valid query.")
+    else:
+        # Update session state with the current query
+        st.session_state.query = query
 
-            # Generate query embedding and find top matches
-            query_embedding = create_query_embedding(query)
-            top_matches = get_top_matches(query_embedding, df)
+        # Generate query embedding and find top matches
+        query_embedding = create_query_embedding(query)
+        top_matches = get_top_matches(query_embedding, df)
 
-            # Clean up matches and save to session state
-            top_matches_pretty = clean_up_matches(top_matches)
-            st.session_state.top_matches = top_matches_pretty
+        # Clean up matches and save to session state
+        top_matches_pretty = clean_up_matches(top_matches)
+        st.session_state.top_matches = top_matches_pretty
 
-            # Prepare messages and get the response
-            messages = prepare_messages(query, top_matches)
-            response = client.chat.completions.create(
-                model="gpt-4",
-                messages=messages,
-                temperature=0
-            )
-            st.session_state.response_message = response.choices[0].message.content
+        # Prepare messages and get the response
+        messages = prepare_messages(query, top_matches)
+        response = client.chat.completions.create(
+            model="gpt-4",
+            messages=messages,
+            temperature=0,
+        )
+        st.session_state.response_message = response.choices[0].message.content
 
     # Display results if they exist in session state
     if st.session_state.top_matches is not None:
@@ -134,7 +158,28 @@ def main():
 
     if st.session_state.response_message is not None:
         st.subheader("Generated Response")
-        st.text(st.session_state.response_message)
+        controls = create_structured_response(st.session_state.response_message)
+        for control, details in controls.items():
+            print(control)
+            print(details)
+            with st.expander(control):
+                st.text(details['Assessment'])
+                st.text(details['Reason'])
+        if st.sidebar.button("Save Finding Results"):
+                st.session_state.findings[query] = control
+                st.success(f"Finding '{query}' saved!")
+
+    if st.session_state.findings is not None:
+        st.sidebar.subheader("Saved Findings")
+        for finding in st.session_state.findings:
+            st.sidebar.button(finding)
+                
+
+
+        
+
+    
+        
 
 
 if __name__ == "__main__":

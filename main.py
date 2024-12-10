@@ -125,8 +125,13 @@ def main():
     query = st.sidebar.text_area("Input finding:")
 
     # Load and prepare the DataFrame
-    df = pd.read_csv(file_path)
-    df = prep_dataframe(df)
+    file_path = "data/NIST_Controls.csv"  # Update with your actual file path
+    try:
+        df = pd.read_csv(file_path)
+        df = prep_dataframe(df)
+    except Exception as e:
+        st.error(f"Error loading or processing the file: {e}")
+        return
 
     if query.strip() == "":
         st.sidebar.warning("Please enter a valid query.")
@@ -144,43 +149,41 @@ def main():
 
         # Prepare messages and get the response
         messages = prepare_messages(query, top_matches)
-        response = client.chat.completions.create(
-            model="gpt-4",
-            messages=messages,
-            temperature=0,
-        )
-        st.session_state.response_message = response.choices[0].message.content
+        try:
+            response = client.chat.completions.create(
+                model="gpt-4",
+                messages=messages,
+                temperature=0,
+            )
+            st.session_state.response_message = response.choices[0].message.content
+        except Exception as e:
+            st.error(f"Error generating response: {e}")
+            return
 
     # Display results if they exist in session state
     if st.session_state.top_matches is not None:
         st.subheader("Top Matches")
-        st.dataframe(data=st.session_state.top_matches, hide_index=True)
+        st.dataframe(data=st.session_state.top_matches, use_container_width=True)
 
     if st.session_state.response_message is not None:
         st.subheader("Generated Response")
         controls = create_structured_response(st.session_state.response_message)
         for control, details in controls.items():
-            print(control)
-            print(details)
             with st.expander(control):
-                st.text(details['Assessment'])
-                st.text(details['Reason'])
+                st.text(f"Assessment: {details['Assessment']}")
+                st.text(f"Reason: {details['Reason']}")
         if st.sidebar.button("Save Finding Results"):
-                st.session_state.findings[query] = control
-                st.success(f"Finding '{query}' saved!")
+            st.session_state.findings[query] = controls
+            st.success(f"Finding '{query}' saved!")
 
-    if st.session_state.findings is not None:
+    if st.session_state.findings:
         st.sidebar.subheader("Saved Findings")
         for finding in st.session_state.findings:
             st.sidebar.button(finding)
-                
-
-
-        
-
-    
-        
-
 
 if __name__ == "__main__":
     main()
+                
+
+
+    

@@ -1,3 +1,6 @@
+'''This script generates embeddings for each coloumn in the NIST_Controls csv. 
+'''
+
 import csv
 import os
 import pandas as pd

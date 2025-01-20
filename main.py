@@ -165,7 +165,7 @@ def main():
         st.subheader("Top Matches")
         st.dataframe(data=st.session_state.top_matches, use_container_width=True)
 
-    if st.session_state.response_message is not None:
+    if st.session_state.response_message and st.session_state.query:
         st.subheader("Generated Response")
         controls = create_structured_response(st.session_state.response_message)
         for control, details in controls.items():

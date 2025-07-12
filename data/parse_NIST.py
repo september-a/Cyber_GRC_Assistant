@@ -4,10 +4,15 @@
 import csv
 import os
 import pandas as pd
-from openai import OpenAI
+from ollama import Client
 import tiktoken
 
-client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY", "<your OpenAI API key if not set as env var>"))
+# Ollama configuration
+OLLAMA_HOST = os.environ.get("OLLAMA_HOST", "http://localhost:11434")
+EMBEDDING_MODEL = os.environ.get("EMBEDDING_MODEL", "nomic-embed-text")
+
+# Create Ollama client
+client = Client(host=OLLAMA_HOST)
 
 # Define the file with controls
 file_path = "data/NIST_800-53_Controls.csv"
@@ -61,11 +66,13 @@ def truncate_text(text, max_tokens):
     return tokenizer.decode(truncated_tokens)
 
 def create_embedding(text):
-    response = client.embeddings.create(
-        input=text,
-        model="text-embedding-ada-002"
-    )
-    return response.data[0].embedding
+    """Create embedding using Ollama's embedding model"""
+    try:
+        response = client.embeddings(model=EMBEDDING_MODEL, prompt=text)
+        return response['embedding']
+    except Exception as e:
+        print(f"Error creating embedding: {e}")
+        return None
 
 def process_controls(controls):
     for control in controls:
@@ -89,6 +96,10 @@ def process_controls(controls):
 
         # Generate and store the embedding
         embedding = create_embedding(text)
+        if embedding is None:
+            print(f"Failed to create embedding for {control['NAME']}, skipping...")
+            continue
+            
         control["embedding"] = embedding  # Add embedding to control dictionary
 
         print(f"{control['NAME']} being processed")

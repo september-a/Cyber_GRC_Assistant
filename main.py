@@ -39,8 +39,27 @@ def prep_dataframe(df):
 
 def prepare_messages(query, controls):
     # Instructions for the output
-    introduction = "First list each control as COMPLIANT, NONCOMPLIANT, or NOT ENOUGH INFO. Then, briefly say why the observation makes the information system compliant or non-compliant. Use the controls provided. If there is NOT ENOUGH INFO, describe the information needed to make a decision. Use passive voice."
+    introduction = """
+    You will be give 2-5 NIST RMF controls. It is your job to determine whether they are COMPLIANT, NON-COMPLIANT, or NOT ENOUGH INFO based on the observation given to you, the cci definitions, and the control information.
+    Each control will have CCIs. These CCIs are the requirements for the control. If one CCI is NON-COMPLIANT, the whole control is NON-COMPLIANT. Give a reason for each CCI for its compliance status.
+    Lastly, give a summary for why the control is COMPLIANT, NON-COMPLIANT, or NOT ENOUGH INFO, based on the CCIs and the remaining control information.
+    If there are related controls, List each related control. Do not provide statements for the related controls.
+    Use the following format.
 
+    Example:
+
+    CCI: ...
+    Compliance Status: ...
+    Reason: ...
+
+    CCI: ...
+    Compliance Status: ...
+    Reason: ...
+
+    Control: ...
+    Compliance Summary: ...
+    Related Controls: ...
+    """
     # User's input
     query = f"\n\nObservation: {query}"
 
@@ -48,6 +67,7 @@ def prepare_messages(query, controls):
     messages = []
     for _, control in controls.iterrows():
         control_text = (
+            f"Control Information:\n"
             f"Family: {control['FAMILY']}\n"
             f"Name: {control['NAME']}\n"
             f"Title: {control['TITLE']}\n"
@@ -60,9 +80,9 @@ def prepare_messages(query, controls):
         )
         
         message_content = introduction + query + "\n\nControl Information:\n" + control_text
+        print(f"Message content: {message_content}\n")
         messages.append({"role": "user", "content": message_content})
 
-    print(f"Messages: {messages}")
     return messages
 
 def get_top_matches(query_embedding, df):
@@ -70,7 +90,7 @@ def get_top_matches(query_embedding, df):
     df['similarity'] = df['embedding'].apply(lambda x: cosine_similarity(query_embedding, np.array(x)))
 
     # Sort by similarity to get matches over .79
-    top_matches = df[df['similarity'] > 0.78]
+    top_matches = df[df['similarity'] > 0.65]
 
     # If there are no matches over .795, get top 5.
     if len(top_matches) < 2:
